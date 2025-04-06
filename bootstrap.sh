@@ -11,7 +11,7 @@ fi
 REGION="$1"
 BUCKET_NAME="$2"
 AWS_SETUP_RS_KEY="muplat/aws-setup/terraform.tfstate"
-k8S_SETUP_RS_KEY="muplat/k8s-setup/terraform.tfstate"
+K8S_SETUP_RS_KEY="muplat/k8s-setup/terraform.tfstate"
 
 echo "Parameters received:"
 echo "  Region: $REGION"
@@ -62,12 +62,17 @@ terraform apply -auto-approve -var "region=$REGION"
 CLUSTER_NAME=$(terraform output | grep cluster_name | awk '{print $3}' | tr -d '"')
 
 echo
+echo "Done. Run this command in order to update kubeconfig:"
+echo
+echo "aws eks update-kubeconfig --name ${CLUSTER_NAME} --region ${REGION}"
+
+echo
 echo "Done, starting k8s setup"
 
 cd ../k8s-setup
 terraform init \
   -backend-config="bucket=$BUCKET_NAME" \
-  -backend-config="key=$K8S_SETUP_RS_KEY" \
+  -backend-config="key=${K8S_SETUP_RS_KEY}" \
   -backend-config="region=$REGION" \
   -backend-config="use_lockfile=true"
 
@@ -75,8 +80,4 @@ echo
 echo "Applying Terraform configuration..."
 terraform apply -auto-approve -var "region=$REGION" -var "remote_state_key=$AWS_SETUP_RS_KEY" -var "remote_state_bucket=$BUCKET_NAME"
 
-echo
-echo "Done. Run this command in order to update kubeconfig:"
-
-echo
-echo "aws eks update-kubeconfig --name ${CLUSTER_NAME} --region ${REGION}"
+echo "Done."
