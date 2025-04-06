@@ -3,13 +3,15 @@
 set -e
 
 # Usage check
-if [ $# -ne 3 ]; then
+if [ $# -ne 2 ]; then
   echo "Usage: $0 <region> <bucket_name>"
   exit 1
 fi
 
 REGION="$1"
 BUCKET_NAME="$2"
+AWS_SETUP_RS_KEY="muplat/aws-setup/terraform.tfstate"
+k8S_SETUP_RS_KEY="muplat/k8s-setup/terraform.tfstate"
 
 echo "Parameters received:"
 echo "  Region: $REGION"
@@ -50,17 +52,31 @@ cd aws-setup
 echo "Initializing Terraform with remote state backend (S3 locking)..."
 terraform init \
   -backend-config="bucket=$BUCKET_NAME" \
-  -backend-config="key=muplat/terraform.tfstate" \
+  -backend-config="key=$AWS_SETUP_RS_KEY" \
   -backend-config="region=$REGION" \
   -backend-config="use_lockfile=true"
 
 echo
 echo "Applying Terraform configuration..."
 terraform apply -auto-approve -var "region=$REGION"
+CLUSTER_NAME=$(terraform output | grep cluster_name | awk '{print $3}' | tr -d '"')
+
+echo
+echo "Done, starting k8s setup"
+
+cd ../k8s-setup
+terraform init \
+  -backend-config="bucket=$BUCKET_NAME" \
+  -backend-config="key=$K8S_SETUP_RS_KEY" \
+  -backend-config="region=$REGION" \
+  -backend-config="use_lockfile=true"
+
+echo
+echo "Applying Terraform configuration..."
+terraform apply -auto-approve -var "region=$REGION" -var "remote_state_key=$AWS_SETUP_RS_KEY" -var "remote_state_bucket=$BUCKET_NAME"
 
 echo
 echo "Done. Run this command in order to update kubeconfig:"
 
-CLUSTER_NAME=$(terraform output | grep cluster_name | awk '{print $3}' | tr -d '"')
 echo
 echo "aws eks update-kubeconfig --name ${CLUSTER_NAME} --region ${REGION}"
