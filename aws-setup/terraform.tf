@@ -7,11 +7,10 @@ terraform {
       version = "~> 5.50"
     }
   }
-
   backend "s3" {
-    bucket         = "my-terraform-state-bucket"
-    key            = "terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "terraform-state-locking"
+    bucket       = ""
+    key          = ""
+    region       = ""
+    use_lockfile = true
   }
 }

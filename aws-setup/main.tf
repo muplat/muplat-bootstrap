@@ -16,6 +16,7 @@ module "vpc" {
 
   enable_nat_gateway = true
   enable_vpn_gateway = false
+  single_nat_gateway = true
 
   tags = {
     Terraform = "true"
@@ -36,7 +37,6 @@ module "eks" {
     eks-pod-identity-agent = {}
     kube-proxy             = {}
     vpc-cni                = {}
-    #    coredns                = {}
   }
 
   # Optional: Adds the current caller identity as an administrator via cluster access entry
